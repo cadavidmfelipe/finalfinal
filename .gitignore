@@ -1,0 +1,7 @@
+evaluaciones/
+
+# Python
+__pycache__/
+*.pyc
+
+runs/
