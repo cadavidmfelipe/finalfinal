@@ -51,7 +51,7 @@ info_keywords_train = (
 info_keywords_eval = (
     "end_reason", "success",
     "distancia_final", "energy_used", "tiempo (s)",
-    "longitud del vuelo", "lista con velocidades", "altitudes",
+    "longitud del vuelo", "velocidad promedio", "altitud promedio",
     #"action_sat_pct", "dvdt_max",
     "r_distance_total", "r_clearance_total", "r_energy_total",
     "r_total", "r_terminal_total",

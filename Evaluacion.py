@@ -101,7 +101,7 @@ def make_eval_env():
     return env
 
 
-VECNORM_PATH = "runs/RL_AGENTE19/vecnorm.pkl"
+VECNORM_PATH = "runs/RL_AGENTE22/vecnorm.pkl"
 save_path=base_dir
 
 
@@ -111,7 +111,7 @@ eval_env = VecNormalize.load(VECNORM_PATH, eval_env)
 eval_env.training = False
 eval_env.norm_reward = False  # MUY IMPORTANTE
 
-model_path="runs/RL_AGENTE19/best/best_model.zip"
+model_path="runs/RL_AGENTE22/best/best_model.zip"
 model_path2="runs/RL_AGENTE106/checkpoints/sac_evtol_300000_steps.zip"
 model = SAC.load(model_path, env=eval_env)
 #model = SAC.load("runs/RL_AGENTE105/last/model.zip", env=eval_env)
@@ -120,7 +120,7 @@ m = re.search(r'RL_AGENTE(\d+)', model_path)
 model_number = int(m.group(1)) if m else None
 
 
-n_episodes = 2
+n_episodes = 1
 
 
 ep_lengths = []
@@ -151,11 +151,13 @@ for ep in range(n_episodes):
     distancia_al_objetivo=[]
     empujes=[]
     acciones=[]
-    energias=[]
+    potencias=[]
     rewards = {
         "r_distance": [],
-        "r_direction": [],
-        "r_proximity": [],
+        "r_clearence":[],
+        "r_energy":[],
+        #"r_direction": [],
+        #"r_proximity": [],
         #"r_vel_approach": [],
         #"r_vel_shaping": [],
         #"r_smooth": [],
@@ -168,7 +170,7 @@ for ep in range(n_episodes):
     
 
     while True:
-        action, _ = model.predict(obs, deterministic=False)
+        action, _ = model.predict(obs, deterministic=True)
         #action=np.array([[0.0,0.2]])
         obs, reward, done, info = eval_env.step(action)
         info=info[0]
@@ -178,11 +180,11 @@ for ep in range(n_episodes):
         try:
             state=info.get("state")
             dt = base_env.unwrapped.dt
-            x = state[0]
-            z = state[1]
-            vx = state[2]
-            vz = state[3]
-            energia_ts=info.get("delta_energía")
+            x = state["x"]
+            z = state["z"]
+            vx = state["vx"]
+            vz = state["vz"]
+            potencia=info.get("potencia")
             empuje=info.get("T (acción)")
             d_goal = info.get("distancia_final", None)
             distancia_al_objetivo.append(float(d_goal) if d_goal is not None else np.nan)
@@ -192,7 +194,7 @@ for ep in range(n_episodes):
             zs.append(z)
             empujes.append(empuje)
             acciones.append(action)
-            energias.append(energia_ts)
+            potencias.append(potencia)
             for key in rewards:
                 val = info.get(key, np.nan)
                 rewards[key].append(float(val) if val is not None else np.nan)
@@ -223,7 +225,7 @@ for ep in range(n_episodes):
             if total_energy > 0:
                 final_energies.append(total_energy)
 
-            if ep == 1:
+            if ep == 0:
                 distancias_episodio=distancia_al_objetivo
                 vxs_ep=vxs
                 vzs_ep=vzs
@@ -232,7 +234,7 @@ for ep in range(n_episodes):
                 rewards_ep=rewards
                 steps_ep=steps
                 acciones_ep=np.array(acciones)
-                energias_ep=energias
+                potencias_ep=potencias
                 xy_objetivo=base_env.unwrapped.objetivo
                 print("valores actualizados")
                 
@@ -240,18 +242,25 @@ for ep in range(n_episodes):
         
 t = np.arange(steps_ep)*dt
 #xy_objetivo=base_env.unwrapped.xy_objetivo
+distances=base_env.unwrapped.distances
+altitudes=base_env.unwrapped.altitudes
 
 plots = EvalPlots(xs=xs_ep, zs=zs_ep, distancias=distancias_episodio,
-                  recompensas=rewards_ep, tiempo=t, xy_objetivo=xy_objetivo)
+                  recompensas=rewards_ep, tiempo=t, xy_objetivo=xy_objetivo,
+                  distances=distances,altitudes=altitudes,
+                  vxs=vxs_ep, vzs=vzs_ep)
 
-plots.graficar(rew_vs_dist=True,boxplot_recompensas=True, save_path=save_path)
+plots.graficar(rew_vs_dist=True,
+               boxplot_recompensas=False,
+               speed_vs_time=True,
+               save_path=save_path)
 manifest = {
     "entorno": str(str(EVTOLFlightEnv.__module__)),
     "modelo": str(model_number)
     }
 
 guardar_trayectoria_csv(save_path, xs_ep, zs_ep, vxs_ep, vzs_ep,
-                        distancias_episodio, rewards_ep, acciones_ep, energias_ep, dt)
+                        distancias_episodio, rewards_ep, acciones_ep, potencias_ep, dt)
 
 print("retorno", sum(rewards_ep["total_reward"]))
 print("retorno", sum(rewards_ep["total_reward"]))

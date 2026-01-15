@@ -65,16 +65,20 @@ class EvalPlots:
     # ========= Gráficas concretas =========
 
     def _plot_rew_vs_dist(self,save_path=None): 
-        need = self.ctx.require(["xs", "zs","distancias","recompensas","tiempo","xy_objetivo"]) 
+        need = self.ctx.require(["xs", "zs","distancias","recompensas","tiempo","xy_objetivo","distances","altitudes"]) 
         rewards_ep = (need["recompensas"])
         distancias_episodio = np.asarray(need["distancias"], dtype=float) 
         xy_objetivo = need["xy_objetivo"] 
         xs_ep = np.asarray(need["xs"], dtype=float) 
         zs_ep = np.asarray(need["zs"], dtype=float) 
         t = np.asarray(need["tiempo"], dtype=float) 
+        distances=np.asarray(need["distances"],dtype=float)
+        altitudes=np.asarray(need["altitudes"], dtype=float)
         
         fig, axes = plt.subplots(3, 1, figsize=(12, 8), constrained_layout=True) 
         axes[0].plot(xs_ep[:], zs_ep[:], linewidth=2) 
+        axes[0].plot(distances, altitudes, color='green')
+        axes[0].fill_between(distances, altitudes, color='lightgreen', alpha=0.5)
         axes[0].scatter(xy_objetivo[0],xy_objetivo[1], marker="x") 
         axes[1].scatter(0, distancias_episodio[0], marker="x") 
         axes[1].plot(t,distancias_episodio) 
@@ -263,7 +267,7 @@ def guardar_trayectoria_csv(save_path, xs, zs, vxs, vzs,
             "x (m)", "z (m)",
             "vx (m/s)", "vz (m/s)",
             "distancia_objetivo (m)",
-            "r_distance", "r_direction", "r_proximity",
+            "r_distance", "r_clearence", "r_energy",
             "r_terminal", "total_reward",
             "angulo empuje normalizado", "magnitud empuje normalizado",
             "energía_acumulada (J)"
@@ -279,8 +283,8 @@ def guardar_trayectoria_csv(save_path, xs, zs, vxs, vzs,
                 vxs[i], vzs[i],
                 distancias[i],
                 rewards["r_distance"][i],
-                rewards["r_direction"][i],
-                rewards["r_proximity"][i],
+                rewards["r_clearence"][i],
+                rewards["r_energy"][i],
                 rewards["r_terminal"][i],
                 rewards["total_reward"][i],
                 acciones[i,0,0],

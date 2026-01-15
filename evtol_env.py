@@ -39,7 +39,7 @@ class EVTOLFlightEnv(gym.Env):
         self.A_rotor=3.141592*(self.radio**2) #(m^2)
         
         self.modo="terreno real" #["terreno real" o "terreno plano]
-        self.eleccion_objetivo="punto mas alto"
+        self.eleccion_objetivo="destino"
 
         #-------------- CARGA DEL TERRENO -----------------------
         if self.modo == "terreno real":
@@ -67,8 +67,8 @@ class EVTOLFlightEnv(gym.Env):
 
         #---------------------- PESOS DE LA RECOMPENSA -------------------------
         self.w_dist=1.0
-        self.w_altitud=1.0
-        self.w_energy=1.0
+        self.w_altitud=0.3
+        self.w_energy=0.2
         self.gamma=0.99
         self.R_crash=200
         self.R_success=200
@@ -351,7 +351,6 @@ class EVTOLFlightEnv(gym.Env):
       #Calculo de la potencia y de la energía
       potencias,info_vi=compute_power(Tvec,vel_vec,self.rho,self.data)
       power=potencias["P_total"]
-
       delta_energy = max(power * self.dt, 0)  # No permitir energía negativa
       self.energy = self.energy + delta_energy
 
@@ -444,17 +443,29 @@ class EVTOLFlightEnv(gym.Env):
             "distancia_final": dist_act,
             "SoC": self.SoC,
             "energy_used": self.energy,
+            "potencia": power,
             "tiempo (s)": float(self.step_count*self.dt),
             "longitud del vuelo": float(self.longitud),
             
             # Velocidades para calcular la velocidad promedio y la variacion de velocidad en cada episodio
-            "lista con velocidades":self.velocidades,
-            "altitudes":self.alturas_relativas,
+            "velocidad promedio":np.mean(self.velocidades),
+            "altitud promedio":np.mean(self.alturas_relativas),
 
             #Información de las condiciones iniciales
             "coordenadas meta":self.objetivo,
             "distancia inicial": self.d0,
             
+            #Recompensas aisladas por timestep- PARA LA EVOLUCIÓN DE UN EPISODIO
+            "r_distance": r_distance_shaping,
+            "r_clearence": r_clearance_shaping,
+            "r_energy": r_energy,
+            "r_terminal": r_terminal,
+            "total_reward": reward,
+            
+            
+            
+            
+            #Retornos por episodio - PARA EL ENTRENAMIENTO
             "r_distance_total": self.retornos["retorno_distancia"],
             "r_clearance_total": self.retornos["retorno_clearence"],
             "r_energy_total": self.retornos["retorno_energia"],
@@ -468,6 +479,8 @@ class EVTOLFlightEnv(gym.Env):
                                (abs(self.retornos["retorno_total"]) + 1e-8) * 100,
             "r_energy_pct": self.retornos["retorno_energia"] / 
                             (abs(self.retornos["retorno_total"]) + 1e-8) * 100,
+            
+            "state": new_state
             
                             }
 

@@ -28,13 +28,14 @@ def compute_power(Tvec,vel_vec,rho,data):
     CD0=data["CD0"] #CD0 del perfil de las palas
     solidity=data["solidity"] #Solidez
     masa=data["masa"]
-    peso=masa*9.81
+    #peso=data["peso"]
     kappa=data["kappa"] #Factor de correcion k (para el CPi)
     K=data["K"] #Factor de corrección K (para el CP0)
     f=data["f"] # Flat area equivalence
     V_tip=data["V_tip"] #Velocidad de punta de pala
     N=data["N"] #Número de rotores
-
+    
+    peso=masa*9.81
     A=np.pi*R**2 # Area del rotor
 
 
