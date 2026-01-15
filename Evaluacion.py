@@ -101,7 +101,7 @@ def make_eval_env():
     return env
 
 
-VECNORM_PATH = "runs/RL_AGENTE22/vecnorm.pkl"
+VECNORM_PATH = "runs/RL_AGENTE02/vecnorm.pkl"
 save_path=base_dir
 
 
@@ -111,7 +111,7 @@ eval_env = VecNormalize.load(VECNORM_PATH, eval_env)
 eval_env.training = False
 eval_env.norm_reward = False  # MUY IMPORTANTE
 
-model_path="runs/RL_AGENTE22/best/best_model.zip"
+model_path="runs/RL_AGENTE02/best/best_model.zip"
 model_path2="runs/RL_AGENTE106/checkpoints/sac_evtol_300000_steps.zip"
 model = SAC.load(model_path, env=eval_env)
 #model = SAC.load("runs/RL_AGENTE105/last/model.zip", env=eval_env)
@@ -147,6 +147,7 @@ for ep in range(n_episodes):
     ep_rew = 0.0
     steps = 0
     xs, zs = [], []
+    altitudes=[]
     vxs,vzs = [], []
     distancia_al_objetivo=[]
     empujes=[]
@@ -184,6 +185,7 @@ for ep in range(n_episodes):
             z = state["z"]
             vx = state["vx"]
             vz = state["vz"]
+            altitud=info.get("altitud")
             potencia=info.get("potencia")
             empuje=info.get("T (acción)")
             d_goal = info.get("distancia_final", None)
@@ -192,6 +194,7 @@ for ep in range(n_episodes):
             vzs.append(vz)
             xs.append(x)
             zs.append(z)
+            altitudes.append(altitud)
             empujes.append(empuje)
             acciones.append(action)
             potencias.append(potencia)
@@ -236,6 +239,7 @@ for ep in range(n_episodes):
                 acciones_ep=np.array(acciones)
                 potencias_ep=potencias
                 xy_objetivo=base_env.unwrapped.objetivo
+                altitudes_ep=altitudes
                 print("valores actualizados")
                 
             break
@@ -259,7 +263,7 @@ manifest = {
     "modelo": str(model_number)
     }
 
-guardar_trayectoria_csv(save_path, xs_ep, zs_ep, vxs_ep, vzs_ep,
+guardar_trayectoria_csv(save_path, xs_ep, zs_ep, altitudes_ep, vxs_ep, vzs_ep,
                         distancias_episodio, rewards_ep, acciones_ep, potencias_ep, dt)
 
 print("retorno", sum(rewards_ep["total_reward"]))

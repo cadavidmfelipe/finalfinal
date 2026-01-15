@@ -39,7 +39,7 @@ class EVTOLFlightEnv(gym.Env):
         self.A_rotor=3.141592*(self.radio**2) #(m^2)
         
         self.modo="terreno real" #["terreno real" o "terreno plano]
-        self.eleccion_objetivo="destino"
+        self.eleccion_objetivo="punto_mas_alto"
 
         #-------------- CARGA DEL TERRENO -----------------------
         if self.modo == "terreno real":
@@ -48,10 +48,10 @@ class EVTOLFlightEnv(gym.Env):
             self.origen=(self.distances[0], self.altitudes[0]) #Coordenadas del punto de origen
             self.destino=(self.distances[-1], self.altitudes[-1]) #Coordenadas del punto de destino
             indice=np.argmax(self.altitudes)
-            self.punto_mas_alto=(self.distances[indice], self.altitudes[indice])  #Coordenadas del punto más alto
+            self.punto_mas_alto=(self.distances[indice], self.altitudes[indice]+500)  #Coordenadas del punto más alto
             self.objetivo_dict={
                 "destino":self.destino,
-                "punto mas alto":self.punto_mas_alto}
+                "punto_mas_alto":self.punto_mas_alto }
             
         #--------------- TERRENO PLANO PARA ENTRENAMIENTO --------------------
         elif self.modo == "terreno plano":
@@ -66,12 +66,12 @@ class EVTOLFlightEnv(gym.Env):
 
 
         #---------------------- PESOS DE LA RECOMPENSA -------------------------
-        self.w_dist=1.0
+        self.w_dist=5.0
         self.w_altitud=0.3
         self.w_energy=0.2
         self.gamma=0.99
         self.R_crash=200
-        self.R_success=200
+        self.R_success=2000
         self.R_timeout=200
         self.R_sin_energia=200
 
@@ -295,7 +295,7 @@ class EVTOLFlightEnv(gym.Env):
         """Potencial solo de distancia al objetivo"""
         pos = np.array([state["x"], state["z"]])
         d = np.linalg.norm(pos - self.objetivo)
-        phi_dist = - d / self.dist_max
+        phi_dist =  d / self.dist_max
         return phi_dist
     
     def potential_clearance(self, state):
@@ -328,23 +328,23 @@ class EVTOLFlightEnv(gym.Env):
       vel_vec=np.array([vx,vz])
 
       #Nuevo estado luego de la acción realizada
-      x,z,vx,vz,pos,vel_vec,speed=self._propagacion_dinamica(Tvec,vel_vec)
+      x_new,z_new,vx_new,vz_new,pos_new,vel_vec_new,speed_new=self._propagacion_dinamica(Tvec,vel_vec)
       
-      self.velocidades.append(speed)
+      self.velocidades.append(speed_new)
       self.alturas_relativas.append(self.altura_relativa)
 
       #Calculo de longitud y variacion de la velocidad y de la distancia
-      self.longitud+=np.linalg.norm(pos-self.prev_pos)
-      self.variacion_velocidad.append(speed-self.prev_speed)
-      dist_act=float(np.linalg.norm(self.objetivo-pos))
+      self.longitud+=np.linalg.norm(pos_new-self.prev_pos)
+      self.variacion_velocidad.append(speed_new-self.prev_speed)
+      dist_act=float(np.linalg.norm(self.objetivo-pos_new))
 
       #Actualizacion de posicion y velocidad
-      self.prev_pos=pos.copy()
-      self.prev_speed=speed
+      self.prev_pos=pos_new.copy()
+      self.prev_speed=speed_new
 
 
       #Actualización del estado
-      self.x, self.z, self.vx, self.vz=x,z,vx,vz
+      self.x, self.z, self.vx, self.vz=x_new,z_new,vx_new,vz_new
       new_state = {"x":self.x, "z":self.z, "vx":self.vx, "vz":self.vz}
 
 
@@ -368,7 +368,7 @@ class EVTOLFlightEnv(gym.Env):
       # 1. REWARD SHAPING DE DISTANCIA
       phi_dist_s = self.potential_distance(state)
       phi_dist_sp = self.potential_distance(new_state)
-      r_distance_shaping = self.w_dist * (self.gamma * phi_dist_sp - phi_dist_s)
+      r_distance_shaping = -self.w_dist * (self.gamma * phi_dist_sp - phi_dist_s)
             
       # 2. REWARD SHAPING DE CLEARANCE
       phi_clr_s = self.potential_clearance(state)
@@ -450,6 +450,7 @@ class EVTOLFlightEnv(gym.Env):
             # Velocidades para calcular la velocidad promedio y la variacion de velocidad en cada episodio
             "velocidad promedio":np.mean(self.velocidades),
             "altitud promedio":np.mean(self.alturas_relativas),
+            "altitud": self.altura_relativa,
 
             #Información de las condiciones iniciales
             "coordenadas meta":self.objetivo,

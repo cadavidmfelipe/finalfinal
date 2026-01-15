@@ -249,7 +249,7 @@ class EvalPlots:
 
 
 
-def guardar_trayectoria_csv(save_path, xs, zs, vxs, vzs,
+def guardar_trayectoria_csv(save_path, xs, zs, altitud, vxs, vzs,
                             distancias, rewards, acciones,energia, dt):
     
     
@@ -265,9 +265,11 @@ def guardar_trayectoria_csv(save_path, xs, zs, vxs, vzs,
         columnas = [
             "timestep", "tiempo (s)",
             "x (m)", "z (m)",
+            "altitud",
             "vx (m/s)", "vz (m/s)",
             "distancia_objetivo (m)",
             "r_distance", "r_clearence", "r_energy",
+            "pct_distance", "pct_clearence", "pct_energy",
             "r_terminal", "total_reward",
             "angulo empuje normalizado", "magnitud empuje normalizado",
             "energía_acumulada (J)"
@@ -280,11 +282,16 @@ def guardar_trayectoria_csv(save_path, xs, zs, vxs, vzs,
                 i,
                 i * dt,
                 xs[i], zs[i],
+                altitud[i],
                 vxs[i], vzs[i],
                 distancias[i],
                 rewards["r_distance"][i],
                 rewards["r_clearence"][i],
                 rewards["r_energy"][i],
+                rewards["r_distance"][i]/rewards["total_reward"][i]*100,
+                rewards["r_clearence"][i]/rewards["total_reward"][i]*100,
+                rewards["r_energy"][i]/rewards["total_reward"][i]*100,
+                
                 rewards["r_terminal"][i],
                 rewards["total_reward"][i],
                 acciones[i,0,0],
